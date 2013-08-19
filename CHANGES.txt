@@ -1,0 +1,4 @@
+PENDING
+=======
+
+ * Initial release; modified from macauthlib codebase.
