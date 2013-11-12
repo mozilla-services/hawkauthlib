@@ -23,6 +23,8 @@ except ImportError:   # pragma: nocover
 
 if sys.version_info > (3,):  # pragma: nocover
 
+    bytes = bytes
+
     def iteritems(d):
         """Efficiently iterate over dict items."""
         return d.items()
@@ -32,6 +34,8 @@ if sys.version_info > (3,):  # pragma: nocover
         return base64.b64encode(data).decode("ascii")
 
 else:  # pragma: nocover
+
+    bytes = str
 
     def iteritems(d):  # NOQA
         """Efficiently iterate over dict items."""

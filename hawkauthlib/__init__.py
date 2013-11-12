@@ -114,7 +114,8 @@ def get_signature(request, key, algorithm=None, params=None):
     # The spec mandates that ids and keys must be ascii.
     # It's therefore safe to encode like this before doing the signature.
     sigstr = sigstr.encode("ascii")
-    key = key.encode("ascii")
+    if not isinstance(key, utils.bytes):
+        key = key.encode("ascii")
     hashmod = ALGORITHMS[algorithm]
     return utils.b64encode(hmac.new(key, sigstr, hashmod).digest())
 
