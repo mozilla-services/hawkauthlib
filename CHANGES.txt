@@ -1,3 +1,9 @@
+0.1.1 - 2013-11-12
+==================
+
+ * Let key be any binary string; id must still be ascii.
+
+
 0.1.0 - 2013-08-19
 ==================
 

@@ -15,7 +15,7 @@ requires = ['webob']
 tests_requires = requires + ['requests']
 
 setup(name='hawkauthlib',
-      version='0.1.0',
+      version='0.1.1',
       description='hawkauth',
       long_description=README + '\n\n' + CHANGES,
       license='MPLv2.0',
