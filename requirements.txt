@@ -1,0 +1,5 @@
+webob
+requests
+nose
+coverage
+pylint

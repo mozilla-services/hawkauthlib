@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 """
-
 A library for implementing the Hawk Access Authentication protocol:
 
     https://npmjs.org/package/hawk
@@ -24,9 +23,9 @@ this::
 
 """
 
-__ver_major__ = 0
-__ver_minor__ = 1
-__ver_patch__ = 1
+__ver_major__ = 2
+__ver_minor__ = 0
+__ver_patch__ = 0
 __ver_sub__ = ""
 __ver_tuple__ = (__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)
 __version__ = "%d.%d.%d%s" % __ver_tuple__
@@ -52,7 +51,7 @@ ALGORITHMS = {
 
 
 @utils.normalize_request_object
-def sign_request(request, id, key, algorithm=None, params=None):
+def sign_request(request, _id, key, algorithm=None, params=None):
     """Sign the given request using Hawk access authentication.
 
     This function implements the client-side request signing algorithm as
@@ -66,7 +65,7 @@ def sign_request(request, id, key, algorithm=None, params=None):
         if params and params.pop("scheme") != "Hawk":
             params.clear()
     # Give sensible values to any parameters that weren't specified.
-    params["id"] = id
+    params["id"] = _id
     if "ts" not in params:
         params["ts"] = str(int(time.time()))
     if "nonce" not in params:
@@ -137,7 +136,7 @@ def check_signature(request, key, hashmod=None, params=None, nonces=None):
     default global cache will be used.  To disable nonce checking (e.g. during
     testing) pass nonces=False.
     """
-    global DEFAULT_NONCE_CACHE
+    global DEFAULT_NONCE_CACHE # pylint: disable=W0603
     if nonces is None:
         nonces = DEFAULT_NONCE_CACHE
         if nonces is None:
