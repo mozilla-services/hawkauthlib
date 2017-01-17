@@ -64,7 +64,7 @@ clean-dist:
 PHONY += clean
 clean: clean-dist
 	rm -rf $(ENV)
-	rm -rf *.egg-info
+	rm -rf *.egg-info .coverage
 	rm -rf .eggs .tox html
 	find . -name '*~' -exec echo rm -f {} +
 	find . -name '*.pyc' -exec rm -f {} +
