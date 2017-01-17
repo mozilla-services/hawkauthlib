@@ -23,12 +23,13 @@ this::
 
 """
 
-__ver_major__ = 2
-__ver_minor__ = 0
-__ver_patch__ = 0
-__ver_sub__ = ""
-__ver_tuple__ = (__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)
-__version__ = "%d.%d.%d%s" % __ver_tuple__
+__version__      = "2.0.0rc1"
+__description__  = "Hawk Access Authentication protocol"
+__url__          = "https://github.com/mozilla-services/hawkauthlib"
+__license__      = "MPLv2.0"
+__author__       = 'Mozilla Services'
+__author_email__ = 'services-dev@mozilla.org'
+__keywords__     = 'authentication Hawk HTTP request signing'
 
 
 import os

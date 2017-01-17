@@ -1,5 +1,14 @@
+# requires
 webob
+
+# tests_requires
 requests
-nose
+
+# develop
 coverage
+nose
+pip
 pylint
+tox
+twine
+wheel
