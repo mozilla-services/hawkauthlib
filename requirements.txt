@@ -1,10 +1,19 @@
+# --------
 # requires
+# --------
+
 webob
 
+# --------------
 # tests_requires
+# --------------
+
 requests
 
+# -------
 # develop
+# -------
+
 pytest
 pytest-cov
 pip
