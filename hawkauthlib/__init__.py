@@ -52,7 +52,7 @@ ALGORITHMS = {
 
 
 @utils.normalize_request_object
-def sign_request(request, _id, key, algorithm=None, params=None):
+def sign_request(request, id_, key, algorithm=None, params=None):
     """Sign the given request using Hawk access authentication.
 
     This function implements the client-side request signing algorithm as
@@ -66,7 +66,7 @@ def sign_request(request, _id, key, algorithm=None, params=None):
         if params and params.pop("scheme") != "Hawk":
             params.clear()
     # Give sensible values to any parameters that weren't specified.
-    params["id"] = _id
+    params["id"] = id_
     if "ts" not in params:
         params["ts"] = str(int(time.time()))
     if "nonce" not in params:
