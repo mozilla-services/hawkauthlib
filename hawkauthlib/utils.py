@@ -1,10 +1,9 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
+# pylint: disable=C0103
 """
-
 Low-level utility functions for hawkauthlib.
-
 """
 
 import sys
@@ -23,7 +22,7 @@ except ImportError:   # pragma: nocover
 
 if sys.version_info > (3,):  # pragma: nocover
 
-    bytes = bytes
+    bytes = bytes  # pylint: disable=W0622
 
     def iteritems(d):
         """Efficiently iterate over dict items."""
@@ -35,7 +34,7 @@ if sys.version_info > (3,):  # pragma: nocover
 
 else:  # pragma: nocover
 
-    bytes = str
+    bytes = str    # pylint: disable=W0622
 
     def iteritems(d):  # NOQA
         """Efficiently iterate over dict items."""
