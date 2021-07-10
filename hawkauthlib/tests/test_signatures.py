@@ -65,6 +65,23 @@ class TestSignatures(unittest.TestCase):
         mysig = get_signature(req, key, algorithm)
         self.assertEquals(sig, mysig)
 
+    def test_post_signature_by_parsing_authz_header(self):
+        req = b"POST /resource/1?b=1&a=2 HTTP/1.1\r\n"\
+              b"Host: example.com:8000\r\n"\
+              b"Content-Type: application/json; charset=utf-8\r\n"\
+              b"Content-Length: 11\r\n"\
+              b"Authorization: Hawk "\
+              b"    id=\"dh37fgj492je\","\
+              b"    ts=\"1353832234\","\
+              b"    nonce=\"j4h3g2\","\
+              b"    ext=\"some-app-ext-data\""\
+              b"\r\n\r\n"
+        key = "werxhqb98rpaxn39848xrunpaw3489ruxnpa98w4rxn"
+        algorithm = "sha256"
+        sig = "56wgBMHr4oIwA/dGZspMm6Zk4rnf3aiwwVeL0VtWoGo="
+        mac = get_signature(req, key, algorithm)
+        self.assertEquals(sig, mac)
+
     def test_sign_request_throws_away_other_auth_params(self):
         req = Request.blank("/")
         req.authorization = ("Digest", {"response": "helloworld"})
