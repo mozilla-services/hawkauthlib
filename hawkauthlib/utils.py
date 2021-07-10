@@ -6,6 +6,7 @@
 Low-level utility functions for hawkauthlib.
 """
 
+from hawkauthlib import ALGORITHMS
 import sys
 import re
 import functools
@@ -118,7 +119,7 @@ def parse_authz_header(request, *default):
         raise
 
 
-def get_normalized_request_string(request, params=None):
+def get_normalized_request_string(request, params=None, algorithm=None):
     """Get the string to be signed for Hawk access authentication.
 
     This method takes a WebOb Request object and returns the data that
@@ -151,10 +152,66 @@ def get_normalized_request_string(request, params=None):
             raise ValueError(msg)
     bits.append(host.lower())
     bits.append(port)
-    bits.append(params.get("hash", ""))
+    bits.append(hash_payload(request, params, algorithm))
     bits.append(params.get("ext", ""))
     bits.append("")     # to get the trailing newline
     return "\n".join(bits)
+
+
+def get_normalized_payload_string(request, params=None):
+    """Get the string to be hashed for Hawk payload verification.
+
+    This function takes a WebOb Request object and returns the data that
+    should be hashed for Hawk payload verification and utilized as the
+    server-side hash calculation for access authentication of that
+    request, a.k.a the "normalized request string".
+
+    If the "params" parameter is not None, it is assumed to be a pre-parsed
+    dict of Hawk parameters as one might find in the Authorization header.  If
+    it is missing or None then the Authorization header from the request will
+    be parsed to determine the necessary parameters.
+    """
+    if params is None:
+        params = parse_authz_header(request, {})
+
+    try:
+        content_type = request.content_type.split(';')[0].strip().lower()
+    except ValueError:
+        msg = "Could not derive the compliant Content-Type value from header value %s" % (request.content_type,)
+        raise ValueError(msg)
+
+    bits = []
+    bits.append("hawk.1.payload")
+    bits.append(content_type)
+    raw = request.copy_body()
+    raw.seek(0)
+    bits.append(raw.read())
+    bits.append("")     # to get the trailing newline
+
+    return "\n".join(bits).encode("utf8")
+
+
+def hash_payload(request, params=None, algorithm=None):
+    """Generate the request payload hash on the server.
+
+    This function takes a WebOb Request object and generates on the server
+    the Hawk payload hash value to support Hawk payload verification and
+    enable a secure access authentication check rather than use the client
+    provided hash against which may have been compromised. This function
+    generatess the expected value coresponding to the actual content type
+    header and raw body content being received by the server.
+
+    If the "params" parameter is not None, it is assumed to be a pre-parsed
+    dict of Hawk parameters as one might find in the Authorization header.  If
+    it is missing or None then the Authorization header from the request will
+    be parsed to determine the necessary parameters.
+    """
+    if algorithm is None:
+        algorithm = "sha256"
+
+    hashmod = ALGORITHMS[algorithm]
+    hashmod.update(get_normalized_payload_string(request, params))
+    return b64encode(hashmod.digest()).decode('utf-8')
 
 
 def strings_differ(string1, string2):

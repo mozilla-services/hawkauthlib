@@ -121,6 +121,31 @@ def get_signature(request, key, algorithm=None, params=None):
 
 
 @utils.normalize_request_object
+def verify_payload(request, params=None, algorithm=None):
+    """Check that the request payload is correctly hashed.
+
+    This function performs payload verification, which is an optional
+    method call by implementers of Hawk Authentication, so it is not
+    enabled by default and is not included in the access authentication
+    check.
+
+    This function retrieves a server-side generated hash of the actual
+    content type header and raw body content being received by the server
+    and compares to the requester supplied hash value. Returning True if
+    they match and false otherwise.
+
+    If the "params" parameter is not None, it is assumed to be a pre-parsed
+    dict of Hawk parameters as one might find in the Authorization header.  If
+    it is missing or None then the Authorization header from the request will
+    be parsed to determine the necessary parameters.
+    """
+    if params is None:
+        params = utils.parse_authz_header(request, {})
+
+    return utils.strings_differ(params["hash"], utils.hash_payload(request, params, algorithm))
+
+
+@utils.normalize_request_object
 def check_signature(request, key, hashmod=None, params=None, nonces=None):
     """Check that the request is correctly signed with the given Hawk key.
 
