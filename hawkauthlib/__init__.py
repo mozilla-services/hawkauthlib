@@ -166,7 +166,7 @@ def verify_payload(request, params=None, algorithm=None):
     if params is None:
         params = utils.parse_authz_header(request, {})
 
-    return utils.strings_differ(params["hash"], utils.hash_payload(request, params, algorithm))
+    return utils.strings_differ(params["hash"], hash_payload(request, params, algorithm))
 
 
 @utils.normalize_request_object
