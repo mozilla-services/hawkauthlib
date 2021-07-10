@@ -111,7 +111,9 @@ def get_signature(request, key, algorithm=None, params=None):
     if params is None:
         params = utils.parse_authz_header(request, {})
 
-    server_hash = hash_payload(request, params, algorithm)
+    # If the client has provided an optional hash Hawk parameter we will calculate on the server
+    # a coresponding hash to verify the signature properly
+    server_hash = "" if params.get("hash") is None else hash_payload(request, params, algorithm)
     sigstr = utils.get_normalized_request_string(request, params, server_hash)
     # The spec mandates that ids and keys must be ascii.
     # It's therefore safe to encode like this before doing the signature.
