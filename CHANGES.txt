@@ -1,3 +1,9 @@
+2.0.1 - 2021-06-10
+==================
+
+ * Introduced optional payload verification method
+ * Fixes [PR#6](https://github.com/mozilla-services/hawkauthlib/issues/6) using server-side generated hash for Hawk signature calculation instead of trusting the request provided value
+
 2.0.0 - 2016-01-16
 ==================
 
