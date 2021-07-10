@@ -118,12 +118,12 @@ def parse_authz_header(request, *default):
         raise
 
 
-def get_normalized_request_string(request, params=None, algorithm=None):
+def get_normalized_request_string(request, params=None, server_hash=None):
     """Get the string to be signed for Hawk access authentication.
 
-    This method takes a WebOb Request object and returns the data that
-    should be signed for Hawk access authentication of that request, a.k.a
-    the "normalized request string".
+    This method takes a WebOb Request object and optional server generated
+    hash, returns the data that should be signed for Hawk access
+    authentication of that request, a.k.a the "normalized request string".
 
     If the "params" parameter is not None, it is assumed to be a pre-parsed
     dict of Hawk parameters as one might find in the Authorization header.  If
@@ -151,7 +151,7 @@ def get_normalized_request_string(request, params=None, algorithm=None):
             raise ValueError(msg)
     bits.append(host.lower())
     bits.append(port)
-    bits.append(hash_payload(request, params, algorithm))
+    bits.append(server_hash if server_hash is not None else "")
     bits.append(params.get("ext", ""))
     bits.append("")     # to get the trailing newline
     return "\n".join(bits)
@@ -170,6 +170,9 @@ def get_normalized_payload_string(request, params=None):
     it is missing or None then the Authorization header from the request will
     be parsed to determine the necessary parameters.
     """
+    if not request.text:
+        return None
+
     if params is None:
         params = parse_authz_header(request, {})
 
@@ -182,12 +185,10 @@ def get_normalized_payload_string(request, params=None):
     bits = []
     bits.append("hawk.1.payload")
     bits.append(content_type)
-    raw = request.copy_body()
-    raw.seek(0)
-    bits.append(raw.read())
+    bits.append(request.text)
     bits.append("")     # to get the trailing newline
 
-    return "\n".join(bits).encode("utf8")
+    return "\n".join(bits)
 
 
 def strings_differ(string1, string2):

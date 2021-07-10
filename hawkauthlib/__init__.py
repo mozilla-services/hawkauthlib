@@ -110,7 +110,9 @@ def get_signature(request, key, algorithm=None, params=None):
         algorithm = "sha256"
     if params is None:
         params = utils.parse_authz_header(request, {})
-    sigstr = utils.get_normalized_request_string(request, params)
+
+    server_hash = hash_payload(request, params, algorithm)
+    sigstr = utils.get_normalized_request_string(request, params, server_hash)
     # The spec mandates that ids and keys must be ascii.
     # It's therefore safe to encode like this before doing the signature.
     sigstr = sigstr.encode("ascii")
@@ -136,12 +138,16 @@ def hash_payload(request, params=None, algorithm=None):
     it is missing or None then the Authorization header from the request will
     be parsed to determine the necessary parameters.
     """
+    payload_string = utils.get_normalized_payload_string(request, params)
+    if payload_string is None:
+        return None
+
     if algorithm is None:
         algorithm = "sha256"
 
-    hashmod = ALGORITHMS[algorithm]
-    hashmod.update(utils.get_normalized_payload_string(request, params))
-    return utils.b64encode(hashmod.digest()).decode('utf-8')
+    hashmod = ALGORITHMS[algorithm]()
+    hashmod.update(payload_string.encode("utf8"))
+    return utils.b64encode(hashmod.digest())
 
 
 @utils.normalize_request_object
