@@ -6,7 +6,6 @@
 Low-level utility functions for hawkauthlib.
 """
 
-from hawkauthlib import ALGORITHMS
 import sys
 import re
 import functools
@@ -189,29 +188,6 @@ def get_normalized_payload_string(request, params=None):
     bits.append("")     # to get the trailing newline
 
     return "\n".join(bits).encode("utf8")
-
-
-def hash_payload(request, params=None, algorithm=None):
-    """Generate the request payload hash on the server.
-
-    This function takes a WebOb Request object and generates on the server
-    the Hawk payload hash value to support Hawk payload verification and
-    enable a secure access authentication check rather than use the client
-    provided hash against which may have been compromised. This function
-    generatess the expected value coresponding to the actual content type
-    header and raw body content being received by the server.
-
-    If the "params" parameter is not None, it is assumed to be a pre-parsed
-    dict of Hawk parameters as one might find in the Authorization header.  If
-    it is missing or None then the Authorization header from the request will
-    be parsed to determine the necessary parameters.
-    """
-    if algorithm is None:
-        algorithm = "sha256"
-
-    hashmod = ALGORITHMS[algorithm]
-    hashmod.update(get_normalized_payload_string(request, params))
-    return b64encode(hashmod.digest()).decode('utf-8')
 
 
 def strings_differ(string1, string2):
