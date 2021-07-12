@@ -23,7 +23,7 @@ this::
 
 """
 
-__version__      = "2.0.3"
+__version__      = "3.0.0"
 __description__  = "Hawk Access Authentication protocol"
 __url__          = "https://github.com/mozilla-services/hawkauthlib"
 __license__      = "MPLv2.0"
