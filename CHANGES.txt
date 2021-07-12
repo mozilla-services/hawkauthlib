@@ -2,7 +2,7 @@
 ==================
 
  * Introduced _optional_ payload verification method `verify_payload()`
- * Fixes [PR#6](https://github.com/mozilla-services/hawkauthlib/issues/6) using server-side generated hash for Hawk signature calculation instead of trusting the request provided value
+ * Fixes [Issue #6](https://github.com/mozilla-services/hawkauthlib/issues/6) using server-side generated hash for Hawk signature calculation instead of trusting the request provided value
  * Backwards compatibility with old functionality is still possible when using `accept_untrusted_content` in `get_signature()` method
 
 2.0.0 - 2016-01-16
