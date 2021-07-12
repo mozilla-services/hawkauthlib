@@ -23,7 +23,7 @@ this::
 
 """
 
-__version__      = "2.0.1"
+__version__      = "2.0.3"
 __description__  = "Hawk Access Authentication protocol"
 __url__          = "https://github.com/mozilla-services/hawkauthlib"
 __license__      = "MPLv2.0"
@@ -72,7 +72,7 @@ def sign_request(request, id_, key, algorithm=None, params=None):
     if "nonce" not in params:
         params["nonce"] = utils.b64encode(os.urandom(5))
     # Calculate the signature and add it to the parameters.
-    params["mac"] = get_signature(request, key, algorithm, params)
+    params["mac"] = get_signature(request, key, algorithm, params, accept_untrusted_content=True)
     # Serialize the parameters back into the authz header, and return it.
     # WebOb has logic to do this that's not perfect, but good enough for us.
     request.authorization = ("Hawk", params)
@@ -95,7 +95,7 @@ def get_id(request, params=None):
 
 
 @utils.normalize_request_object
-def get_signature(request, key, algorithm=None, params=None):
+def get_signature(request, key, algorithm=None, params=None, accept_untrusted_content=False):
     """Get the Hawk signature for the given request.
 
     This function calculates the Hawk signature for the given request and
@@ -111,10 +111,14 @@ def get_signature(request, key, algorithm=None, params=None):
     if params is None:
         params = utils.parse_authz_header(request, {})
 
-    # If the client has provided an optional hash Hawk parameter we will calculate on the server
-    # a coresponding hash to verify the signature properly
-    server_hash = "" if params.get("hash") is None else hash_payload(request, params, algorithm)
-    sigstr = utils.get_normalized_request_string(request, params, server_hash)
+    if accept_untrusted_content is True:
+        # supports client-side flow, and old insecure functionality identified in Issue #6
+        sigstr = utils.get_normalized_request_string(request, params)
+    else:
+        # If the client has provided an optional hash Hawk parameter we will calculate on the server
+        # a coresponding hash to verify the signature properly
+        server_hash = "" if params.get("hash") is None else hash_payload(request, params, algorithm)
+        sigstr = utils.get_normalized_request_string(request, params, server_hash)
     # The spec mandates that ids and keys must be ascii.
     # It's therefore safe to encode like this before doing the signature.
     sigstr = sigstr.encode("ascii")
@@ -208,10 +212,18 @@ def check_signature(request, key, hashmod=None, params=None, nonces=None):
     try:
         timestamp = int(params["ts"])
         nonce = params["nonce"]
-        # Check validity of the signature.
-        expected_sig = get_signature(request, key, hashmod, params)
+        # Check validity of the signature, checking the MAC first is faster
+        # https://github.com/mozilla/hawk/blob/main/API.md
+        expected_sig = get_signature(request, key, hashmod, params, accept_untrusted_content=True)
         if utils.strings_differ(params["mac"], expected_sig):
             return False
+        # If the MAC is valid, the server calculates the payload hash and compares the value with
+        # the provided payload hash in the header
+        # https://github.com/mozilla/hawk/blob/main/API.md
+        expected_sig = get_signature(request, key, hashmod, params, accept_untrusted_content=False)
+        if utils.strings_differ(params["mac"], expected_sig):
+            return False
+
         # Check freshness of the nonce.
         # This caches it so future use of the nonce will fail.
         # We do this *after* successul sig check to avoid DOS attacks.

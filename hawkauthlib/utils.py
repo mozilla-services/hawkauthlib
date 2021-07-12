@@ -151,7 +151,12 @@ def get_normalized_request_string(request, params=None, server_hash=None):
             raise ValueError(msg)
     bits.append(host.lower())
     bits.append(port)
-    bits.append(server_hash if server_hash is not None else "")
+    # In many cases, checking the MAC first is faster than calculating the payload hash
+    # https://github.com/mozilla/hawk/blob/main/API.md
+    if server_hash is None:
+        bits.append(params.get("hash", ""))
+    else:
+        bits.append(server_hash)
     bits.append(params.get("ext", ""))
     bits.append("")     # to get the trailing newline
     return "\n".join(bits)
