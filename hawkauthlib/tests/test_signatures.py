@@ -18,19 +18,19 @@ class TestSignatures(unittest.TestCase):
         req = b"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"
         req = Request.from_bytes(req)
         req.authorization = ("Hawk", {"id": "user1", "ts": "1", "nonce": "2"})
-        self.assertEquals(get_id(req), "user1")
+        self.assertEqual(get_id(req), "user1")
 
     def test_get_id_returns_none_for_other_auth_schemes(self):
         req = b"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"
         req = Request.from_bytes(req)
         req.authorization = ("OAuth", {"id": "user1", "ts": "1", "nonce": "2"})
-        self.assertEquals(get_id(req), None)
+        self.assertEqual(get_id(req), None)
 
     def test_get_id_returns_none_if_the_id_is_missing(self):
         req = b"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"
         req = Request.from_bytes(req)
         req.authorization = ("Hawk", {"ts": "1", "nonce": "2"})
-        self.assertEquals(get_id(req), None)
+        self.assertEqual(get_id(req), None)
 
     def test_get_signature_against_example_from_spec(self):
         req = b"GET /resource/1?b=1&a=2 HTTP/1.1\r\n"\
@@ -47,7 +47,7 @@ class TestSignatures(unittest.TestCase):
         sig = "6R4rV5iE+NPoym+WwjeHzjAGXUtLNIxmo1vpMofpLAE="
         req = Request.from_bytes(req)
         mysig = get_signature(req, key, algorithm, params=params)
-        self.assertEquals(sig, mysig)
+        self.assertEqual(sig, mysig)
 
     def test_get_signature_by_parsing_authz_header(self):
         req = b"GET /resource/1?b=1&a=2 HTTP/1.1\r\n"\
@@ -63,7 +63,7 @@ class TestSignatures(unittest.TestCase):
         algorithm = "sha256"
         sig = "6R4rV5iE+NPoym+WwjeHzjAGXUtLNIxmo1vpMofpLAE="
         mysig = get_signature(req, key, algorithm)
-        self.assertEquals(sig, mysig)
+        self.assertEqual(sig, mysig)
 
     def test_post_signature_by_parsing_authz_header(self):
         req = b"POST /resource/1?b=1&a=2 HTTP/1.1\r\n"\
@@ -80,7 +80,7 @@ class TestSignatures(unittest.TestCase):
         algorithm = "sha256"
         sig = "56wgBMHr4oIwA/dGZspMm6Zk4rnf3aiwwVeL0VtWoGo="
         mac = get_signature(req, key, algorithm)
-        self.assertEquals(sig, mac)
+        self.assertEqual(sig, mac)
 
     def test_post_with_payload_verification(self):
         req = b"POST /resource/1?b=1&a=2 HTTP/1.1\r\n"\
@@ -98,13 +98,34 @@ class TestSignatures(unittest.TestCase):
         algorithm = "sha256"
         sig = "Tx7PoLWYtn3VJEc0GdkguHkEB281grYEtFycPhtln9w="
         mac = get_signature(req, key, algorithm)
-        self.assertEquals(sig, mac)
+        self.assertEqual(sig, mac)
+
+    def test_version_2_0_0_post_signature_by_parsing_authz_header(self):
+        req_template = '''POST /resource/1?b=1&a=2 HTTP/1.1\r
+Host: example.com:8000\r
+Content-Type: application/json; charset=utf-8\r
+Content-Length: 26\r
+Authorization: Hawk id="dh37fgj492je", ts="1353832234", nonce="j4h3g2", ext="some-app-ext-data"\r
+\r
+{"test": "%s"}'''
+        client_req = req_template % "just some text"
+        actual_req = req_template % "modify b4 send"
+        key = "werxhqb98rpaxn39848xrunpaw3489ruxnpa98w4rxn"
+        algorithm = "sha256"
+        client_mac = "56wgBMHr4oIwA/dGZspMm6Zk4rnf3aiwwVeL0VtWoGo="
+        client_mac_proof = get_signature(client_req.encode('utf8'), key, algorithm)
+        self.assertEqual(client_mac_proof, client_mac)
+        expected_mac = client_mac # hawkhashlib v2.0.0 adhered to client implementation only
+        # Using payload modified by attacker and client signed MAC using secret for expected payload
+        actual_mac = get_signature(actual_req.encode('utf8'), key, algorithm)
+        self.assertEqual(expected_mac, client_mac)
+        self.assertEqual(actual_mac, client_mac) # all 3 are identical
 
     def test_sign_request_throws_away_other_auth_params(self):
         req = Request.blank("/")
         req.authorization = ("Digest", {"response": "helloworld"})
         sign_request(req, "id", "key")
-        self.assertEquals(req.authorization[0], "Hawk")
+        self.assertEqual(req.authorization[0], "Hawk")
 
     def test_check_signature_errors_when_missing_id(self):
         req = b"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"
