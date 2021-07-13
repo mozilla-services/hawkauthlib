@@ -105,4 +105,3 @@ The following features of the Hawk protocol are not yet supported:
   * Bewits.
   * Timestamp adjustment.
   * Calculating or verifying the server's response signature.
-  * Calculating or verifying payload hashes.

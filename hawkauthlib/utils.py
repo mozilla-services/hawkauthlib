@@ -118,6 +118,27 @@ def parse_authz_header(request, *default):
         raise
 
 
+def get_signature(request, key, params, algorithm=None):
+    """Calculate the Hawk signature for the given request.
+
+    This function calculates the Hawk signature for the given request and
+    returns it as a string.
+
+    The "params" parameter must contain all necessary Hawk signature parameters,
+    including the payload hash if in use.
+    """
+    if algorithm is None:
+        algorithm = "sha256"
+    sigstr = utils.get_normalized_request_string(request, params)
+    # The spec mandates that ids and keys must be ascii.
+    # It's therefore safe to encode like this before doing the signature.
+    sigstr = sigstr.encode("ascii")
+    if not isinstance(key, utils.bytes):
+        key = key.encode("ascii")
+    hashmod = ALGORITHMS[algorithm]
+    return utils.b64encode(hmac.new(key, sigstr, hashmod).digest())
+
+
 def get_normalized_request_string(request, params=None, server_hash=None):
     """Get the string to be signed for Hawk access authentication.
 
@@ -162,24 +183,17 @@ def get_normalized_request_string(request, params=None, server_hash=None):
     return "\n".join(bits)
 
 
-def get_normalized_payload_string(request, params=None):
+def get_normalized_payload_string(request):
     """Get the string to be hashed for Hawk payload verification.
 
     This function takes a WebOb Request object and returns the data that
-    should be hashed for Hawk payload verification and utilized as the
-    server-side hash calculation for access authentication of that
-    request, a.k.a the "normalized request string".
-
-    If the "params" parameter is not None, it is assumed to be a pre-parsed
-    dict of Hawk parameters as one might find in the Authorization header.  If
-    it is missing or None then the Authorization header from the request will
-    be parsed to determine the necessary parameters.
+    should be hashed for Hawk payload verification, a.k.a the "hash" parameter
+    in the normalized request string.
     """
+    # The Hawk spec mandates that we hash the body as UTF-8-encoded text,
+    # so accessing it as `text` here is legitimate.
     if not request.text:
         return None
-
-    if params is None:
-        params = parse_authz_header(request, {})
 
     try:
         content_type = request.content_type.split(';')[0].strip().lower()
