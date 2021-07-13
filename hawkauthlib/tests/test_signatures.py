@@ -121,6 +121,69 @@ Authorization: Hawk id="dh37fgj492je", ts="1353832234", nonce="j4h3g2", ext="som
         self.assertEqual(expected_mac, client_mac)
         self.assertEqual(actual_mac, client_mac) # all 3 are identical
 
+    def test_untrusted_no_hash_post_signature_by_parsing_authz_header(self):
+        req_without_hash = b'''POST /resource/1?b=1&a=2 HTTP/1.1\r
+Host: example.com:8000\r
+Content-Type: application/json; charset=utf-8\r
+Content-Length: 26\r
+Authorization: Hawk id="dh37fgj492je", ts="1353832234", nonce="j4h3g2", ext="some-app-ext-data"\r
+\r
+{"test": "just some text"}'''
+        key = "werxhqb98rpaxn39848xrunpaw3489ruxnpa98w4rxn"
+        algorithm = "sha256"
+        client_mac = "56wgBMHr4oIwA/dGZspMm6Zk4rnf3aiwwVeL0VtWoGo="
+        client_mac_proof = get_signature(req_without_hash, key, algorithm)
+        self.assertEqual(client_mac_proof, client_mac)
+        params = {
+            'id': "dh37fgj492je",
+            'ts': "1353832234",
+            'nonce': "j4h3g2",
+            'ext': "some-app-ext-data"
+        }
+        expected_mac = get_signature(req_without_hash, key, algorithm, params, accept_untrusted_content=True)
+        self.assertEqual(expected_mac, client_mac)
+
+    def test_untrusted_with_hash_post_signature_by_parsing_authz_header(self):
+        req_with_hash = b'''POST /resource/1?b=1&a=2 HTTP/1.1\r
+Host: example.com:8000\r
+Content-Type: application/json; charset=utf-8\r
+Content-Length: 26\r
+Authorization: Hawk id="dh37fgj492je", ts="1353832234", nonce="j4h3g2", ext="some-app-ext-data", hash="Lj826IMSgrm1vnCFQNxaXasE8zHBXSWq2pPtnHEmaO8="\r
+\r
+{"test": "just some text"}'''
+        key = "werxhqb98rpaxn39848xrunpaw3489ruxnpa98w4rxn"
+        algorithm = "sha256"
+        client_mac = "Tx7PoLWYtn3VJEc0GdkguHkEB281grYEtFycPhtln9w="
+        actual_mac = get_signature(req_with_hash, key, algorithm, None, accept_untrusted_content=True)
+        self.assertEqual(actual_mac, client_mac)
+
+    def test_modified_req_with_original_hash_post_signature_by_parsing_authz_header(self):
+        key = "werxhqb98rpaxn39848xrunpaw3489ruxnpa98w4rxn"
+        algorithm = "sha256"
+        client_mac = "Tx7PoLWYtn3VJEc0GdkguHkEB281grYEtFycPhtln9w="
+        params = {
+            'id': "dh37fgj492je",
+            'ts': "1353832234",
+            'nonce': "j4h3g2",
+            'ext': "some-app-ext-data"
+        }
+        req_with_hash = '''POST /resource/1?b=1&a=2 HTTP/1.1\r
+Host: example.com:8000\r
+Content-Type: application/json; charset=utf-8\r
+Content-Length: 26\r
+Authorization: Hawk id="dh37fgj492je", ts="1353832234", nonce="j4h3g2", ext="some-app-ext-data", hash="Lj826IMSgrm1vnCFQNxaXasE8zHBXSWq2pPtnHEmaO8="\r
+\r
+{"test": "%s"}'''
+        req_with_hash_for_signing = req_with_hash % "just some text"
+        modified_req_with_original_hash = req_with_hash % "modify b4 send"
+        # client-side
+        expected_mac = get_signature(req_with_hash_for_signing.encode('utf8'), key, algorithm, None, accept_untrusted_content=True)
+        # server-side, i.e. get_signature will perform:
+        # server_hash = hash_payload(modified_req_with_original_hash.encode('utf8'), algorithm)
+        actual_mac = get_signature(modified_req_with_original_hash.encode('utf8'), key, algorithm)
+        self.assertEqual(expected_mac, client_mac)
+        self.assertNotEqual(actual_mac, client_mac)
+
     def test_sign_request_throws_away_other_auth_params(self):
         req = Request.blank("/")
         req.authorization = ("Digest", {"response": "helloworld"})
